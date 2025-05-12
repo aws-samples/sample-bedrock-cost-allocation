@@ -1,0 +1,19 @@
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": [
+				"dynamodb:PutItem",
+				"dynamodb:ListTables",
+				"dynamodb:GetItem",
+				"dynamodb:DeleteItem",
+				"dynamodb:CreateTable",
+				"dynamodb:DescribeTable",
+				"dynamodb:DeleteTable"
+			],
+			"Resource": "*"
+		}
+	]
+}

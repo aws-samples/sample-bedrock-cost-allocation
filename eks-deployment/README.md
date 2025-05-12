@@ -11,6 +11,12 @@ eks-deployment/
 │   ├── app.py                            # Main Flask application
 │   ├── Dockerfile                        # Container configuration
 │   ├── requirements.txt                  # Python dependencies
+│   ├── team-a-create-profile.py         # Create Bedrock inference profile
+│   ├── team-a-delete-profile.py         # Delete Bedrock inference profile
+│   ├── team-a-list-profiles.py          # List Bedrock inference profiles
+│   ├── team-a-multi-threading-use-profile.py  # Multi-threaded inference
+│   └── team-a-use-profile.py            # Single-threaded inference
+│
 ├── cluster/                              # EKS cluster configurations
 │   ├── eks-console-access.yaml          # Console access RBAC
 │   ├── inference-poc-clusterconfig.yaml  # Main cluster config
@@ -20,7 +26,6 @@ eks-deployment/
 │   ├── bedrockpolicypoc.json           # Bedrock access policy
 │   ├── eks-console-policy.json         # EKS console access policy
 │   └── iam_policy.json                 # Load Balancer Controller policy
-│   └── dynamodbpolicypoc.json          # DynamoDB access policy
 │
 ├── k8s/                                 # Kubernetes manifests
 │   ├── crds.yaml                       # AWS Load Balancer Controller CRDs
@@ -30,13 +35,12 @@ eks-deployment/
 └── scripts/                             # Deployment and management scripts
     ├── 00-install-eks-prerequisites.sh  # Install required tools
     ├── 01-validate-configs.sh          # Validate configurations
-    ├── 02-create-resources.sh            # Create EKS cluster and DynamoDB table
+    ├── 02-create-cluster.sh            # Create EKS cluster
     ├── 03-create-service-account.sh    # Set up service accounts
     ├── 04-setup-console-access.sh      # Configure console access
     ├── 05-buildimage.sh               # Build and push Docker image
     ├── 06-deploy-app.sh               # Deploy application
     └── 07-cleanup.sh                  # Clean up resources
-    └─team-profile-client.sh           # Client script to consume the service on EKS
     └── config.env                      # Configuration file
 
 ```
@@ -95,7 +99,7 @@ export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output tex
 
 5. Deploy the infrastructure:
 ```bash
-./scripts/02-create-resources.sh
+./scripts/02-create-cluster.sh
 ./scripts/03-create-service-account.sh
 ./scripts/04-setup-console-access.sh
 ```
@@ -134,9 +138,9 @@ Ensure all required tools are installed:
 ./scripts/00-install-eks-prerequisites.sh
 ```
 
-### Creating the resources
+### Creating the Cluster
 ```bash
-./scripts/02-create-resources.sh
+./scripts/02-create-cluster.sh
 ```
 
 This script:
@@ -145,7 +149,6 @@ Creates EKS cluster using inference-poc-clusterconfig.yaml
 Sets up managed node groups with m8g.medium instances
 Configures necessary VPC and networking components
 Updates your kubeconfig file
-It also creates DynamoDB table team-profile.
 
 
 ### Setting up IAM and Service Accounts
@@ -208,6 +211,12 @@ curl http://${SERVICE_URL}/hello
 # Test Bedrock health
 curl http://${SERVICE_URL}/bedrock-health
 
+# Test Team A endpoint
+curl http://${SERVICE_URL}/teama
+
+# Test Team B endpoint
+curl http://${SERVICE_URL}/teamb
+
 ```
 
 ## Viewing Logs
@@ -230,29 +239,6 @@ To remove all resources:
 ```bash
 ./scripts/07-cleanup.sh
 ```
-
-## Consumer
-```bash
-./scripts/team-profile-client.sh
-```
------
-Usage:
-Welcome to Team Profile API Client
-=================================
-Available actions:
------------------
-- create
-- delete
-- get
-- use
-
-Enter action: use
-
-Valid teams: teama teamb
-Enter team tag: teama
-Enter version (e.g., 1.0): 1.0
------
-
 
 ## Security Considerations
 

@@ -1,0 +1,26 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: inference-poc
+  region: us-west-2
+  version: "1.32"
+managedNodeGroups:
+  - name: ng-1
+    instanceType: m5.xlarge
+    minSize: 1
+    maxSize: 2
+    desiredCapacity: 1
+    labels:
+      role: proxy
+    iam:
+      withAddonPolicies:
+        albIngress: true
+addons:
+  - name: vpc-cni
+    version: latest
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+iam:
+  withOIDC: true
