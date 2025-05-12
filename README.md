@@ -1,4 +1,4 @@
-# EKS Cluster Setup for Inference Workshop
+# Amazon Bedrock Application Inference Profile Setup Workshop
 
 This guide provides step-by-step instructions for setting up an Amazon EKS cluster with a public Network Load Balancer (NLB) and Bedrock integration.
 
