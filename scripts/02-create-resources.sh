@@ -214,6 +214,62 @@ create_dynamo_db_table() {
     fi
 }
 
+
+check_create_sns_topic() {
+    print_section "Creating SNS topic"
+
+    # Validate inputs
+    if [[ -z "$TOPIC_NAME" ]]; then
+        echo "Error: Missing required parameters."
+        return 1
+    fi
+
+    echo "Checking if SNS topic '$TOPIC_NAME' exists .."
+    topic_arn=$(aws sns list-topics --region "$AWS_REGION" --query "Topics[?ends_with(TopicARn,':$TOPIC_NAME')].TopicArn" --output text)
+
+    if [[ -z "$topic_arn" ]]; then
+        echo "Topic '$topic_name' doesn't exist. Creating now..."
+
+        # Create the SNS topic
+        topic_arn=$(aws sns create-topic --name "$TOPIC_NAME" --region "$AWS_REGION" --output text --query 'TopicArn')
+
+        if [[ -z "$topic_arn" ]]; then
+            echo "Error: Failed to create SNS topic."
+            return 1
+        fi
+
+        echo "Successfully created SNS topic: \$topic_arn"
+    
+    # Check if table already exists
+    if aws dynamodb describe-table --table-name ${DYNAMODB_TABLE_NAME} --region ${AWS_REGION} &>/dev/null; then
+        print_info "DynamoDB table '${DYNAMODB_TABLE_NAME}' already exists"
+        return 0
+    fi
+    
+    print_info "Creating DynamoDB table '${DYNAMODB_TABLE_NAME}'..."
+    
+    if aws dynamodb create-table \
+        --table-name ${DYNAMODB_TABLE_NAME} \
+        --attribute-definitions \
+            AttributeName=team_tag,AttributeType=S \
+            AttributeName=version,AttributeType=S \
+        --key-schema \
+            AttributeName=team_tag,KeyType=HASH \
+            AttributeName=version,KeyType=RANGE \
+        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+        --region ${AWS_REGION}; then
+        print_success "DynamoDB table created successfully"
+        
+        # Wait for table to become active
+        print_info "Waiting for table to become active..."
+        aws dynamodb wait table-exists --table-name ${DYNAMODB_TABLE_NAME} --region ${AWS_REGION}
+        print_success "Table is now active and ready to use"
+    else
+        print_error "Failed to create DynamoDB table"
+        return 1
+    fi
+}
+
 # Main function
 main() {
     print_section "Starting Cluster Creation Process"
@@ -243,6 +299,11 @@ main() {
     create_dynamo_db_table || exit 1
 
     print_section "DynamoDB Table Creation Complete"
+
+    # Create SNS topic
+    check_create_sns_topic || exit 1
+
+    print_section "SNS topic Creation Complete"
     
 }
 
