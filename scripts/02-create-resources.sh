@@ -268,7 +268,6 @@ check_create_sns_topic() {
         print_error "Failed to create DynamoDB table"
         return 1
     fi
-}
 
 # Main function
 main() {
