@@ -239,6 +239,9 @@ check_create_sns_topic() {
         fi
 
         echo "Successfully created SNS topic: \$topic_arn"
+    else
+        echo "SNS topic already exists: \$topic_arn"
+    fi
 }
 
 # Main function
