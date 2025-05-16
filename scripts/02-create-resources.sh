@@ -239,35 +239,7 @@ check_create_sns_topic() {
         fi
 
         echo "Successfully created SNS topic: \$topic_arn"
-    
-    # Check if table already exists
-    if aws dynamodb describe-table --table-name ${DYNAMODB_TABLE_NAME} --region ${AWS_REGION} &>/dev/null; then
-        print_info "DynamoDB table '${DYNAMODB_TABLE_NAME}' already exists"
-        return 0
-    fi
-    
-    print_info "Creating DynamoDB table '${DYNAMODB_TABLE_NAME}'..."
-    
-    if aws dynamodb create-table \
-        --table-name ${DYNAMODB_TABLE_NAME} \
-        --attribute-definitions \
-            AttributeName=team_tag,AttributeType=S \
-            AttributeName=version,AttributeType=S \
-        --key-schema \
-            AttributeName=team_tag,KeyType=HASH \
-            AttributeName=version,KeyType=RANGE \
-        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-        --region ${AWS_REGION}; then
-        print_success "DynamoDB table created successfully"
-        
-        # Wait for table to become active
-        print_info "Waiting for table to become active..."
-        aws dynamodb wait table-exists --table-name ${DYNAMODB_TABLE_NAME} --region ${AWS_REGION}
-        print_success "Table is now active and ready to use"
-    else
-        print_error "Failed to create DynamoDB table"
-        return 1
-    fi
+}
 
 # Main function
 main() {
