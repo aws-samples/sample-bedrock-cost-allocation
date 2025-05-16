@@ -64,13 +64,13 @@ setup_aws_region() {
         if grep -q "^AWS_REGION=" "./scripts/config.env"; then
             AWS_REGION=$(grep "^AWS_REGION=" "./scripts/config.env" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d '[:space:]')
             print_info "Found AWS_REGION in config.env: $AWS_REGION"
-            
+
             # Verify if the region exists
             if ! aws ec2 describe-regions --region-names $AWS_REGION >/dev/null 2>&1; then
                 print_error "Invalid AWS region: $AWS_REGION"
                 exit 1
             fi
-            
+
             export AWS_REGION
             export AWS_DEFAULT_REGION=$AWS_REGION
             print_success "Using AWS Region: $AWS_REGION"
@@ -113,19 +113,19 @@ check_prerequisites() {
 # Function to delete Kubernetes resources
 delete_kubernetes_resources() {
     print_section "Deleting Kubernetes Resources"
-    
+
     # Check if cluster is accessible
     if ! kubectl cluster-info &>/dev/null; then
         print_info "Cluster not accessible, skipping Kubernetes resource deletion"
         return 0
     fi
-    
+
     local resources=(
         "service/inferencepoc-service"
         "deployment/inferencepoc-deployment"
         "serviceaccount/${SERVICE_ACCOUNT_NAME}"
     )
-    
+
     for resource in "${resources[@]}"; do
         print_info "Deleting $resource..."
         if kubectl delete $resource --ignore-not-found; then
@@ -134,7 +134,7 @@ delete_kubernetes_resources() {
             print_warning "Failed to delete $resource"
         fi
     done
-    
+
     # Delete CRDs
     print_info "Deleting CRDs..."
     if kubectl delete -f ./k8s/crds.yaml --ignore-not-found; then
@@ -147,7 +147,7 @@ delete_kubernetes_resources() {
 # Function to delete service accounts
 delete_service_accounts() {
     print_section "Deleting Service Accounts"
-    
+
     print_info "Deleting IAM service account..."
     if eksctl delete iamserviceaccount \
         --cluster=${CLUSTER_NAME} \
@@ -164,18 +164,18 @@ delete_service_accounts() {
 # Function to delete IAM policies
 delete_iam_policies() {
     print_section "Deleting IAM Policies"
-    
+
     local policies=(
         "${IAM_POLICY_LB_NAME}"
         "${IAM_POLICY_BEDROCK_NAME}"
         "${IAM_POLICY_CONSOLE_NAME}"
         "${IAM_POLICY_DYNAMODB_NAME}"
     )
-    
+
     for policy in "${policies[@]}"; do
         print_info "Deleting policy: $policy"
         local policy_arn="arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${policy}"
-        
+
         # Check if policy exists
         if ! aws iam get-policy --policy-arn $policy_arn &>/dev/null; then
             print_info "Policy $policy does not exist, skipping"
@@ -216,13 +216,13 @@ delete_iam_policies() {
 # Function to delete ECR repository
 delete_ecr_repository() {
     print_section "Deleting ECR Repository"
-    
+
     print_info "Deleting repository: ${ECR_REPO_NAME}"
     if ! aws ecr describe-repositories --repository-names ${ECR_REPO_NAME} --region ${AWS_REGION} &>/dev/null; then
         print_info "ECR repository ${ECR_REPO_NAME} does not exist, skipping"
         return 0
     fi
-    
+
     if aws ecr delete-repository \
         --repository-name ${ECR_REPO_NAME} \
         --force \
@@ -236,7 +236,7 @@ delete_ecr_repository() {
 # Function to delete cluster
 delete_cluster() {
     print_section "Deleting EKS Cluster"
-    
+
     print_info "Deleting cluster: ${CLUSTER_NAME}"
     if ! aws eks describe-cluster --name ${CLUSTER_NAME} --region ${AWS_REGION} &>/dev/null; then
         print_info "Cluster ${CLUSTER_NAME} does not exist, skipping"
@@ -271,6 +271,19 @@ delete_dynamodb_table() {
     else
         print_warning "Failed to delete DynamoDB table"
     fi
+}
+
+delete_SNS_topic() {
+    print_section "Deleting SNS topic"
+
+    topic_arn=$(aws sns list-topics --region "$AWS_REGION" --query "Topics[?ends_with(TopicArn,':$TOPIC_NAME')].TopicArn" --output text)
+    if [[ -z "$topic_arn" ]]; then
+        echo "Topic "$topic_name" doesn't exist. no need to delete..."
+    else
+        aws sns delete-topic --topic-arn "$topic_arn"
+    fi
+
+    print_section "Successfully deleted SNS topic: $topic_arn"
 }
 
 # Function to verify cleanup
@@ -309,45 +322,48 @@ verify_cleanup() {
 # Main function
 main() {
     print_section "Starting Cleanup Process"
-    
+
     # Check prerequisites
     check_prerequisites || exit 1
-    
+
     # Setup AWS Region
     setup_aws_region
-    
+
     # Delete resources in order
     delete_kubernetes_resources
-    
+
     # Wait for kubernetes resources to be fully deleted
     print_info "Waiting for Kubernetes resources to be fully deleted..."
     sleep 30
-    
+
     delete_service_accounts
-    
+
     # Wait for service accounts to be fully deleted
     print_info "Waiting for service accounts to be fully deleted..."
     sleep 30
-    
+
     # Delete cluster first (clean up many attached resources)
     delete_cluster || true
-    
+
     # Wait for cluster deletion to complete
     print_info "Waiting for cluster deletion to complete..."
     sleep 30
-    
+
     # Delete IAM policies
     delete_iam_policies
-    
+
     # Finally delete ECR repository
     delete_ecr_repository
-    
+
     # Delete DynamoDB table
     delete_dynamodb_table
 
+    # Delete SNS topic
+    delete_SNS_topic
+
     # Verify cleanup
     verify_cleanup
-    
+
     print_section "Cleanup Complete"
     print_info "If you experienced any errors, please check the AWS Console to ensure all resources were properly deleted"
 }
