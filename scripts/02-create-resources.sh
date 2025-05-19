@@ -228,7 +228,7 @@ check_create_sns_topic() {
     topic_arn=$(aws sns list-topics --region "$AWS_REGION" --query "Topics[?ends_with(TopicARn,':$TOPIC_NAME')].TopicArn" --output text)
 
     if [[ -z "$topic_arn" ]]; then
-        echo "Topic '$topic_name' doesn't exist. Creating now..."
+        echo "Topic '$TOPIC_NAME' doesn't exist. Creating now..."
 
         # Create the SNS topic
         topic_arn=$(aws sns create-topic --name "$TOPIC_NAME" --region "$AWS_REGION" --output text --query 'TopicArn')
@@ -238,9 +238,9 @@ check_create_sns_topic() {
             return 1
         fi
 
-        echo "Successfully created SNS topic: \$topic_arn"
+        echo "Successfully created SNS topic: $topic_arn"
     else
-        echo "SNS topic already exists: \$topic_arn"
+        echo "SNS topic already exists: $topic_arn"
     fi
 }
 
