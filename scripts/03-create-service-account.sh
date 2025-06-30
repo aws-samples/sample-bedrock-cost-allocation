@@ -19,9 +19,10 @@
 #   02-create-resources.sh          - Create EKS cluster
 #   03-create-service-account.sh   - Configure service accounts and IAM roles
 #   04-setup-console-access.sh    - Setup EKS console access
-#   05-buildimage.sh             - Build and push container images
-#   06-deploy-app.sh             - Deploy application to EKS
-#   07-cleanup.sh                - Clean up all resources
+#   05-setup-vpc-peering.sh      - Setup VPC peering between host and EKS VPCs
+#   06-buildimage.sh             - Build and push container images
+#   07-deploy-app.sh             - Deploy application to EKS
+#   09-cleanup.sh                - Clean up all resources
 #
 # Environment Variables picked up form config.env file:
 #   - AWS_REGION              - AWS region for deployment
@@ -88,7 +89,7 @@ aws iam create-policy \
 print_info "Creating Bedrock Policy..."
 aws iam create-policy \
     --policy-name ${IAM_POLICY_BEDROCK_NAME} \
-    --policy-document file://./iam/bedrockpolicypoc.json \
+    --policy-document file://./iam/bedrockpolicy.json \
     --description "Bedrock Access Policy" 2>/dev/null || true
 
 # DynamoDB Policy
@@ -142,10 +143,16 @@ TRUST_RELATIONSHIP=$(cat <<EOF
 EOF
 )
 
-# Create IAM role
-aws iam create-role \
-    --role-name "${CLUSTER_NAME}-${SERVICE_ACCOUNT_NAME}" \
-    --assume-role-policy-document "$TRUST_RELATIONSHIP" 2>/dev/null || true
+# Check if role exists and update trust policy, otherwise create it
+if aws iam get-role --role-name "${CLUSTER_NAME}-${SERVICE_ACCOUNT_NAME}" &>/dev/null; then
+    print_info "Role ${CLUSTER_NAME}-${SERVICE_ACCOUNT_NAME} exists, updating trust policy..."
+    aws iam update-assume-role-policy \
+        --role-name "${CLUSTER_NAME}-${SERVICE_ACCOUNT_NAME}" \
+        --policy-document "$TRUST_RELATIONSHIP"
+else
+    print_info "Creating role ${CLUSTER_NAME}-${SERVICE_ACCOUNT_NAME}..."
+    aws iam create-role --role-name "${CLUSTER_NAME}-${SERVICE_ACCOUNT_NAME}" --assume-role-policy-document "$TRUST_RELATIONSHIP"
+fi
 
 # Attach policies to role
 aws iam attach-role-policy \

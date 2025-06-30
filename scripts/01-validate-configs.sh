@@ -19,9 +19,10 @@
 #   02-create-resources.sh          - Create EKS cluster
 #   03-create-service-account.sh   - Configure service accounts and IAM roles
 #   04-setup-console-access.sh    - Setup EKS console access
-#   05-buildimage.sh             - Build and push container images
-#   06-deploy-app.sh             - Deploy application to EKS
-#   07-cleanup.sh                - Clean up all resources
+#   05-setup-vpc-peering.sh      - Setup VPC peering between host and EKS VPCs
+#   06-buildimage.sh             - Build and push container images
+#   07-deploy-app.sh             - Deploy application to EKS
+#   09-cleanup.sh                - Clean up all resources
 #
 # Environment Variables picked up form config.env file:
 #   - AWS_REGION              - AWS region for deployment
@@ -191,20 +192,20 @@ echo "Starting configuration validation..."
 echo "Checking cluster configurations..."
 
 # Process main cluster config
-CLUSTER_CONFIG="cluster/inference-poc-clusterconfig.yaml"
+CLUSTER_CONFIG="./eks-deployment/cluster/inference-poc-clusterconfig.yaml"
 process_cluster_config "$CLUSTER_CONFIG" "cluster config"
 
 # Process deployment configs for both architectures
 echo "Processing deployment configurations..."
 
 # ARM64 deployment
-K8S_DEPLOYMENT_ARM64="k8s/inferenceapp-arm64.yaml"
+K8S_DEPLOYMENT_ARM64="./eks-deployment/k8s/inferenceapp-arm64.yaml"
 if [ -f "$K8S_DEPLOYMENT_ARM64" ]; then
     process_deployment_config "$K8S_DEPLOYMENT_ARM64" "arm64"
 fi
 
 # AMD64 deployment
-K8S_DEPLOYMENT_AMD64="k8s/inferenceapp-amd64.yaml"
+K8S_DEPLOYMENT_AMD64="./eks-deployment/k8s/inferenceapp-amd64.yaml"
 if [ -f "$K8S_DEPLOYMENT_AMD64" ]; then
     process_deployment_config "$K8S_DEPLOYMENT_AMD64" "amd64"
 fi
@@ -220,7 +221,7 @@ echo "Service account: $SERVICE_ACCOUNT_NAME"
 
 # Final validation of all YAML files
 echo -e "\nPerforming final YAML syntax validation..."
-YAML_FILES=$(find cluster k8s -name "*.yaml")
+YAML_FILES=$(find ./eks-deployment/cluster ./eks-deployment/k8s -name "*.yaml")
 ALL_VALID=true
 
 for file in $YAML_FILES; do

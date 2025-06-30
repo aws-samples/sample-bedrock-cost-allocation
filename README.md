@@ -2,44 +2,51 @@
 
 This guide provides step-by-step instructions for setting up an Amazon EKS cluster with a public Network Load Balancer (NLB) and Bedrock integration.
 
-## Directory Structure
+## Directory Structure Update
 
-```text
-eks-deployment/
+The project has been reorganized to use a more structured directory layout. All EKS deployment resources are now located in the `eks-deployment` directory:
+
+```
+sample-bedrock-cost-allocation/
 ├── README.md
 ├── app/                                   # Application source code
 │   ├── app.py                            # Main Flask application
 │   ├── Dockerfile                        # Container configuration
 │   ├── requirements.txt                  # Python dependencies
-├── cluster/                              # EKS cluster configurations
-│   ├── eks-console-access.yaml          # Console access RBAC
-│   ├── inference-poc-clusterconfig.yaml  # Main cluster config
-│   └── ng.yaml                          # Node group config
+├── eks-deployment/                       # EKS deployment resources
+│   ├── cluster/                          # EKS cluster configurations
+│   │   ├── eks-console-access.yaml       # Console access RBAC
+│   │   └── inference-poc-clusterconfig.yaml # Main cluster config
+│   │
+│   ├── k8s/                              # Kubernetes manifests
+│   │   ├── crds.yaml                     # AWS Load Balancer Controller CRDs
+│   │   ├── inferenceapp-amd64.yaml       # Application deployment for AMD64
+│   │   ├── inferenceapp-arm64.yaml       # Application deployment for ARM64
+│   │   └── inferencepoc-service.yaml     # NLB service configuration
+│   │
+│   └── README.md                         # EKS deployment documentation
 │
 ├── iam/                                  # IAM policies and roles
-│   ├── bedrockpolicypoc.json           # Bedrock access policy
-│   ├── eks-console-policy.json         # EKS console access policy
-│   └── iam_policy.json                 # Load Balancer Controller policy
-│   └── dynamodbpolicypoc.json          # DynamoDB access policy
+│   ├── bedrockpolicypoc.json             # Bedrock access policy
+│   ├── dynamodbpolicypoc.json            # DynamoDB access policy
+│   ├── eks-console-policy.json           # EKS console access policy
+│   └── iam_policy.json                   # Load Balancer Controller policy
 │
-├── k8s/                                 # Kubernetes manifests
-│   ├── crds.yaml                       # AWS Load Balancer Controller CRDs
-│   ├── inferenceapp.yaml              # Application deployment
-│   └── inferencepoc-service.yaml      # NLB service configuration
-│
-└── scripts/                             # Deployment and management scripts
-    ├── 00-install-eks-prerequisites.sh  # Install required tools
-    ├── 01-validate-configs.sh          # Validate configurations
+└── scripts/                              # Deployment and management scripts
+    ├── 00-install-eks-prerequisites.sh   # Install required tools
+    ├── 01-validate-configs.sh            # Validate configurations
     ├── 02-create-resources.sh            # Create EKS cluster and DynamoDB table
-    ├── 03-create-service-account.sh    # Set up service accounts
-    ├── 04-setup-console-access.sh      # Configure console access
-    ├── 05-buildimage.sh               # Build and push Docker image
-    ├── 06-deploy-app.sh               # Deploy application
-    └── 07-cleanup.sh                  # Clean up resources
-    └─team-profile-client.sh           # Client script to consume the service on EKS
-    └── config.env                      # Configuration file
-
+    ├── 03-create-service-account.sh      # Set up service accounts
+    ├── 04-setup-console-access.sh        # Configure console access
+    ├── 05-setup-vpc-peering.sh           # Setup VPC peering
+    ├── 06-buildimage.sh                  # Build and push Docker image
+    ├── 07-deploy-app.sh                  # Deploy application
+    ├── 09-cleanup.sh                     # Clean up resources
+    ├── team-profile-client.sh            # Client script to consume the service on EKS
+    └── config.env                        # Configuration file
 ```
+
+**Note:** All scripts have been updated to use the new directory structure. The previous duplicate directories (`cluster-duplicate` and `k8s-duplicate`) are no longer needed and can be safely removed.
 
 
 # EKS Deployment with Bedrock Integration

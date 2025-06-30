@@ -19,9 +19,10 @@
 #   02-create-resources.sh          - Create EKS cluster
 #   03-create-service-account.sh   - Configure service accounts and IAM roles
 #   04-setup-console-access.sh    - Setup EKS console access
-#   05-buildimage.sh             - Build and push container images
-#   06-deploy-app.sh             - Deploy application to EKS
-#   07-cleanup.sh                - Clean up all resources
+#   05-setup-vpc-peering.sh      - Setup VPC peering between host and EKS VPCs
+#   06-buildimage.sh             - Build and push container images
+#   07-deploy-app.sh             - Deploy application to EKS
+#   09-cleanup.sh                - Clean up all resources
 #
 # Environment Variables picked up form config.env file:
 #   - AWS_REGION              - AWS region for deployment

@@ -1,0 +1,27 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "bedrock:InvokeModel",
+                "bedrock:InvokeModelWithResponseStream",
+                "bedrock:ListFoundationModels",
+                "bedrock:ListModelCustomizationJobs",
+                "bedrock:ListProvisionedModelThroughputs",
+                "bedrock:GetFoundationModel",
+                "bedrock:Converse",
+                "bedrock:CreateApplicationInferenceProfile",
+                "bedrock:DeleteApplicationInferenceProfile",
+                "bedrock:GetApplicationInferenceProfile",
+                "bedrock:ListApplicationInferenceProfiles",
+                "bedrock:TagResource",
+                "bedrock:CreateInferenceProfile",
+                "bedrock-runtime:InvokeModel",
+                "bedrock-runtime:InvokeModelWithResponseStream",
+                "bedrock-runtime:Converse"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
