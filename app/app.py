@@ -174,9 +174,9 @@ def create_profile(team_tag, data):
             print("Testing CreateInferenceProfile...")
             tags = [{'key': 'team', 'value': team_tag}]
             if team_tag == 'teama':
-                base_model_arn = "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
+                base_model_arn = "arn:aws:bedrock:us-west-2::foundation-model/us.anthropic.claude-3-5-haiku-20241022-v1:0"
             if team_tag == 'teamb':
-                base_model_arn = "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+                base_model_arn = "arn:aws:bedrock:us-west-2::foundation-model/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
             response_text = create_inference_profile(team_tag, base_model_arn, tags)
 
             if response_text:
