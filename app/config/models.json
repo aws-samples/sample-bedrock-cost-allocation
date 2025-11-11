@@ -1,0 +1,31 @@
+{
+  "model_registry": {
+    "sonnet_4.0": "us.anthropic.claude-sonnet-4-20250514-v1:0"
+  },
+  "team_defaults": {
+    "teama": {
+      "model_type": "sonnet",
+      "version": "4.0"
+    },
+    "teamb": {
+      "model_type": "sonnet",
+      "version": "4.0"
+    }
+  },
+  "validation": {
+    "valid_teams": ["teama", "teamb"],
+    "valid_model_types": ["sonnet"],
+    "valid_versions": ["4.0"],
+    "valid_actions": ["create", "delete", "get", "use"],
+    "default_version": "4.0"
+  },
+  "aws_config": {
+    "region": "us-west-2",
+    "dynamodb_table": "team-profile"
+  },
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-01-01T00:00:00Z",
+    "description": "Model configuration for Bedrock Inference Profile Management API"
+  }
+}

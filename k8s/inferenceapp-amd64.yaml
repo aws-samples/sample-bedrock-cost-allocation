@@ -21,11 +21,37 @@ spec:
         - name: inferencepoc
           image: 757795455786.dkr.ecr.us-west-2.amazonaws.com/inferencepoc:latest-amd64
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
               cpu: 200m
-              memory: 256Mi
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: MODEL_CONFIG_PATH
+              value: "config/models.json"
+            - name: FLASK_ENV
+              value: "production"
+            - name: PORT
+              value: "8080"
+

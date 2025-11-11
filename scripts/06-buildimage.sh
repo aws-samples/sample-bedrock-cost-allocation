@@ -230,7 +230,9 @@ build_and_push() {
     local repo_url="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
     
     print_section "Building for $platform"
-    
+
+    print "This is a special build for testing"
+
     print_info "Building Docker image..."
     if docker buildx build --platform $platform \
         -t ${repo_url}:latest-${arch} \
@@ -309,6 +311,7 @@ main() {
     print_info "Repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
     print_info "ARM64 image tag: latest-arm64"
     print_info "AMD64 image tag: latest-amd64"
+    print_info "special build complete"
 }
 
 # Execute main function

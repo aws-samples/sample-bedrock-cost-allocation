@@ -19,7 +19,7 @@ spec:
       serviceAccountName: inferencepoc-sa
       containers:
         - name: inferencepoc
-          image: .dkr.ecr.us-west-2.amazonaws.com/inferencepoc:latest-amd64
+          image: 757795455786.dkr.ecr.us-west-2.amazonaws.com/inferencepoc:latest-amd64
           ports:
             - containerPort: 80
           resources:

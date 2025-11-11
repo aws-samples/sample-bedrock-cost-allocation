@@ -197,10 +197,10 @@ create_dynamo_db_table() {
         --table-name ${DYNAMODB_TABLE_NAME} \
         --attribute-definitions \
             AttributeName=team_tag,AttributeType=S \
-            AttributeName=version,AttributeType=S \
+            AttributeName=model_type_version,AttributeType=S \
         --key-schema \
             AttributeName=team_tag,KeyType=HASH \
-            AttributeName=version,KeyType=RANGE \
+            AttributeName=model_type_version,KeyType=RANGE \
         --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
         --region ${AWS_REGION}; then
         print_success "DynamoDB table created successfully"
@@ -284,4 +284,5 @@ main() {
 
 # Execute main function
 main
+
 
