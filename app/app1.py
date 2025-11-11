@@ -6,12 +6,9 @@ A Flask application that manages AWS Bedrock inference profiles for teams,
 stores metadata in DynamoDB, and provides AI conversation capabilities.
 """
 
-import html
-import re
 import json
 import logging
 import os
-import re
 import time
 from typing import Dict, Optional, Tuple, Any
 
@@ -21,21 +18,15 @@ from flask import Flask, request, jsonify
 from botocore.exceptions import ClientError
 
 def sanitize_user_input(value: str) -> str:
-    """Sanitize user input to prevent XSS while preserving readability."""
+    """Safe sanitization without regex - AWS model ID compatible."""
     if not isinstance(value, str):
-        return str(value)
+        return "invalid"
     
-    # HTML escape to prevent script injection
-    sanitized = html.escape(value)
+    # AWS-compatible characters: model IDs use dots, hyphens, colons, underscores
+    safe_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.:/')
+    sanitized = ''.join(c for c in value if c in safe_chars)
     
-    # Remove any remaining script-like patterns
-    sanitized = re.sub(r'<[^>]*>', '', sanitized)
-    
-    # Limit length to prevent abuse
-    if len(sanitized) > 100:
-        sanitized = sanitized[:100] + "..."
-    
-    return sanitized
+    return sanitized[:100] if sanitized else "unknown"
 
 # Configure logging
 logging.basicConfig(
