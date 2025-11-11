@@ -6,6 +6,8 @@ A Flask application that manages AWS Bedrock inference profiles for teams,
 stores metadata in DynamoDB, and provides AI conversation capabilities.
 """
 
+import html
+import re
 import json
 import logging
 import os
@@ -17,6 +19,23 @@ import boto3
 import botocore
 from flask import Flask, request, jsonify
 from botocore.exceptions import ClientError
+
+def sanitize_user_input(value: str) -> str:
+    """Sanitize user input to prevent XSS while preserving readability."""
+    if not isinstance(value, str):
+        return str(value)
+    
+    # HTML escape to prevent script injection
+    sanitized = html.escape(value)
+    
+    # Remove any remaining script-like patterns
+    sanitized = re.sub(r'<[^>]*>', '', sanitized)
+    
+    # Limit length to prevent abuse
+    if len(sanitized) > 100:
+        sanitized = sanitized[:100] + "..."
+    
+    return sanitized
 
 # Configure logging
 logging.basicConfig(
@@ -564,7 +583,7 @@ def handle_team_profile():
         elif action == 'get':
             profile = data_manager.get_profile(team_tag, model_type, version)
             if not profile:
-                return create_error_response(f"No profile found for team {team_tag} with model {model_type}", 404)
+                return create_error_response(f"No profile found for team {sanitize_user_input(team_tag)} with model {sanitize_user_input(model_type)}", 404)
 
             return create_success_response(profile, time.time() - start_time)
 
@@ -575,7 +594,7 @@ def handle_team_profile():
         elif action == 'use':
             profile = data_manager.get_profile(team_tag, model_type, version)
             if not profile:
-                return create_error_response(f"No profile found for team {team_tag} with model {model_type}", 404)
+                return create_error_response(f"No profile found for team {sanitize_user_input(team_tag)} with model {sanitize_user_input(model_type)}", 404)
 
             # Get optional system_prompt from request data
             system_prompt = data.get('system_prompt')
@@ -584,7 +603,7 @@ def handle_team_profile():
 
     except ValueError as e:
         logger.warning(f"Validation error: {e}")
-        return create_error_response(str(e), 400)
+        return create_error_response("Invalid request data", 400)
 
 
 @app.route('/hello', methods=['GET'])

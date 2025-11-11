@@ -226,7 +226,7 @@ def delete_profile(team_tag, version):
         }), 200
     except botocore.exceptions.ClientError as e:
             return jsonify({
-                "details": str(e)
+                "details": "Profile deletion failed"
             }), 500
 
 def get_profile(team_tag, version):
@@ -241,7 +241,7 @@ def get_profile(team_tag, version):
         }), 200
     except botocore.exceptions.ClientError as e:
             return jsonify({
-                "details": str(e)
+                "details": "Profile retrieval failed"
             }), 500
     except Exception as e:
             return jsonify({
