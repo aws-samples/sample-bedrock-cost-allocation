@@ -536,7 +536,7 @@ def handle_team_profile():
                 return create_error_response("No JSON data provided or invalid JSON format", 400)
         except Exception as e:
             logger.error(f"JSON parsing error: {e}")
-            return create_error_response(f"Failed to parse JSON: {str(e)}", 400)
+            return create_error_response("Failed to parse JSON data", 400)
 
         team_tag, action, model_type, version, user_message = validate_request_data(data)
 
@@ -627,20 +627,25 @@ def bedrock_health():
 
     except Exception as e:
         logger.error(f"Bedrock health check failed: {e}")
-        return create_error_response(f"Bedrock health check failed: {str(e)}")
+        return create_error_response("Bedrock health check failed")
 
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors without exposing stack traces."""
+    logger.error(f"Internal server error: {error}")
+    return create_error_response("Internal server error", 500)
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle all unhandled exceptions without exposing stack traces."""
+    logger.error(f"Unhandled exception: {e}")
+    return create_error_response("An unexpected error occurred", 500)
 
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
     return create_error_response("Endpoint not found", 404)
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors."""
-    logger.error(f"Internal server error: {error}")
-    return create_error_response("Internal server error", 500)
 
 
 if __name__ == '__main__':

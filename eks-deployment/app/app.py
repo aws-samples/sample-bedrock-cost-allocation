@@ -207,11 +207,11 @@ def create_profile(team_tag, data):
 
         except botocore.exceptions.ClientError as e:
             return jsonify({
-                "error": str(e)
+                "error": "AWS service error"
             }), 500
         except Exception as e:
             return jsonify({
-                "error": f"Unexpected error: {str(e)}"
+                "error": "Unexpected error occurred"
             }), 500
 
 def delete_profile(team_tag, version):
@@ -329,7 +329,7 @@ def handle_team_profile():
 
     except Exception as e:
         return jsonify({
-            "error": f"Unexpected error: {str(e)}"
+            "error": "Unexpected error occurred"
         }), 500
 
 # Define route for /hello
@@ -374,12 +374,12 @@ def bedrock_health():
 
     except botocore.exceptions.ClientError as e:
         return jsonify({
-            "message": f"AWS API error: {str(e)}",
+            "message": "AWS API error",
             "status": "error"
         }), 500
     except Exception as e:
         return jsonify({
-            "message": f"Error: {str(e)}",
+            "message": "Service error",
             "status": "error"
         }), 500
 
@@ -391,5 +391,18 @@ def not_found(error):
         "status": "error"
     }), 404
 
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors without exposing stack traces."""
+    return jsonify({"error": "Internal server error"}), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle all unhandled exceptions without exposing stack traces."""
+    return jsonify({"error": "An unexpected error occurred"}), 500
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)
+    # Never enable debug mode in production
+    debug_mode = os.environ.get('FLASK_ENV', 'production') == 'development'
+    port = int(os.environ.get('PORT', 80))
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
