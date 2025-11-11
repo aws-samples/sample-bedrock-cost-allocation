@@ -11,6 +11,7 @@ numpy>=2.1.2
 
 # AI/ML Frameworks
 langchain>=1.0.2
+langchain-aws>=1.0.0
 langgraph>=1.0.1
 litellm>=1.52.0
 
