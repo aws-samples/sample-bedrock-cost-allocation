@@ -1,27 +1,33 @@
 {
-    "Version": "2012-10-17",
+    "Version":"2012-10-17",		 	 	 
     "Statement": [
         {
             "Effect": "Allow",
             "Action": [
-                "bedrock:InvokeModel",
-                "bedrock:InvokeModelWithResponseStream",
-                "bedrock:ListFoundationModels",
-                "bedrock:ListModelCustomizationJobs",
-                "bedrock:ListProvisionedModelThroughputs",
-                "bedrock:GetFoundationModel",
-                "bedrock:Converse",
-                "bedrock:CreateApplicationInferenceProfile",
-                "bedrock:DeleteApplicationInferenceProfile",
-                "bedrock:GetApplicationInferenceProfile",
-                "bedrock:ListApplicationInferenceProfiles",
-                "bedrock:TagResource",
-                "bedrock:CreateInferenceProfile",
-                "bedrock-runtime:InvokeModel",
-                "bedrock-runtime:InvokeModelWithResponseStream",
-                "bedrock-runtime:Converse"
+                "bedrock:InvokeModel*",
+                "bedrock:CreateInferenceProfile"
             ],
-            "Resource": "*"
+            "Resource": [
+                "arn:aws:bedrock:*::foundation-model/*",
+                "arn:aws:bedrock:*:*:inference-profile/*",
+                "arn:aws:bedrock:*:*:application-inference-profile/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "bedrock:GetInferenceProfile",
+                "bedrock:ListInferenceProfiles",
+                "bedrock:DeleteInferenceProfile",
+                "bedrock:TagResource",
+                "bedrock:UntagResource",
+                "bedrock:ListTagsForResource"
+            ],
+            "Resource": [
+                "arn:aws:bedrock:*:*:inference-profile/*",
+                "arn:aws:bedrock:*:*:application-inference-profile/*"
+            ]
         }
     ]
 }
+
