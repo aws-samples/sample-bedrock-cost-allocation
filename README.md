@@ -1,93 +1,301 @@
-# bedrock-sample-cost-allocation
 
+# Amazon Bedrock Application Inference Profile Setup Workshop
 
+This guide provides step-by-step instructions for setting up an Amazon EKS cluster with a public Network Load Balancer (NLB) and Bedrock integration.
 
-## Getting started
+## Directory Structure Update
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+The project has been reorganized to use a more structured directory layout. All EKS deployment resources are now located in the `eks-deployment` directory:
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.aws.dev/odeshman/bedrock-sample-cost-allocation-eks-changes.git
-git branch -M main
-git push -uf origin main
+sample-bedrock-cost-allocation/
+├── README.md
+├── app/                                   # Application source code
+│   ├── app.py                            # Main Flask application
+│   ├── Dockerfile                        # Container configuration
+│   ├── requirements.txt                  # Python dependencies
+├── eks-deployment/                       # EKS deployment resources
+│   ├── cluster/                          # EKS cluster configurations
+│   │   ├── eks-console-access.yaml       # Console access RBAC
+│   │   └── inference-poc-clusterconfig.yaml # Main cluster config
+│   │
+│   ├── k8s/                              # Kubernetes manifests
+│   │   ├── crds.yaml                     # AWS Load Balancer Controller CRDs
+│   │   ├── inferenceapp-amd64.yaml       # Application deployment for AMD64
+│   │   ├── inferenceapp-arm64.yaml       # Application deployment for ARM64
+│   │   └── inferencepoc-service.yaml     # NLB service configuration
+│   │
+│   └── README.md                         # EKS deployment documentation
+│
+├── iam/                                  # IAM policies and roles
+│   ├── bedrockpolicypoc.json             # Bedrock access policy
+│   ├── dynamodbpolicypoc.json            # DynamoDB access policy
+│   ├── eks-console-policy.json           # EKS console access policy
+│   └── iam_policy.json                   # Load Balancer Controller policy
+│
+└── scripts/                              # Deployment and management scripts
+    ├── 00-install-eks-prerequisites.sh   # Install required tools
+    ├── 01-validate-configs.sh            # Validate configurations
+    ├── 02-create-resources.sh            # Create EKS cluster and DynamoDB table
+    ├── 03-create-service-account.sh      # Set up service accounts
+    ├── 04-setup-console-access.sh        # Configure console access
+    ├── 05-setup-vpc-peering.sh           # Setup VPC peering
+    ├── 06-buildimage.sh                  # Build and push Docker image
+    ├── 07-deploy-app.sh                  # Deploy application
+    ├── 09-cleanup.sh                     # Clean up resources
+    ├── team-profile-client.sh            # Client script to consume the service on EKS
+    └── config.env                        # Configuration file
 ```
 
-## Integrate with your tools
+**Note:** All scripts have been updated to use the new directory structure. The previous duplicate directories (`cluster-duplicate` and `k8s-duplicate`) are no longer needed and can be safely removed.
 
-- [ ] [Set up project integrations](https://gitlab.aws.dev/odeshman/bedrock-sample-cost-allocation-eks-changes/-/settings/integrations)
 
-## Collaborate with your team
+# EKS Deployment with Bedrock Integration
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+This repository contains the infrastructure and application code for deploying a Flask application on Amazon EKS with Bedrock integration and public Network Load Balancer setup.
 
-## Test and Deploy
+## Project Structure
+```
+eks-deployment/
+├── cluster/               # Cluster configuration files
+├── app/                  # Application source code
+├── k8s/                 # Kubernetes manifests
+├── iam/                 # IAM policies
+└── scripts/             # Deployment scripts
+```
 
-Use the built-in continuous integration in GitLab.
+## Prerequisites
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
 
-***
+    AWS CLI configured with appropriate permissions
+    eksctl installed
+    kubectl installed (>= 1.32)
+    Docker installed
+    Python 3.11+
+    AWS Account with Bedrock access
+    Minimum 4GB RAM
+    8GB free disk space
+    AWS Account with Bedrock access
 
-# Editing this README
+## Quick Start
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd eks-deployment
+```
 
-## Suggestions for a good README
+2. Export your AWS Account ID:
+```bash
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+3. Install prerequisites:
+```bash
+./scripts/00-install-eks-prerequisites.sh
+```
+    
+4. Validate configurations:
+```bash
+./scripts/01-validate-configs.sh
+```
+    
 
-## Name
-Choose a self-explaining name for your project.
+5. Deploy the infrastructure:
+```bash
+./scripts/02-create-resources.sh
+./scripts/03-create-service-account.sh
+./scripts/04-setup-console-access.sh
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+4. Build and deploy application:
+```bash
+./scripts/05-buildimage.sh
+./scripts/06-deploy-app.sh
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## Components
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### 1. EKS Cluster
+- Region: us-west-2
+- Kubernetes version: 1.32
+- Node types: 
+  - Primary: m5.large
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### 2. Flask Application
+- Python 3.11
+- AWS Bedrock integration
+- Health check endpoints
+- Team A/B endpoints
+- Error handling
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### 3. Network Load Balancer
+- Internet-facing
+- TCP port 80
+- Dynamic target group registration
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## Deployment Details
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### 1. Prerequisites Installation
+Ensure all required tools are installed:
+```bash
+./scripts/00-install-eks-prerequisites.sh
+```
+
+### Creating the resources
+```bash
+./scripts/02-create-resources.sh
+```
+
+This script:
+
+Creates EKS cluster using inference-poc-clusterconfig.yaml
+Sets up managed node groups with m8g.medium instances
+Configures necessary VPC and networking components
+Updates your kubeconfig file
+It also creates DynamoDB table team-profile.
+
+
+### Setting up IAM and Service Accounts
+```bash
+./scripts/03-create-service-account.sh
+```
+
+This creates:
+
+AWS Load Balancer Controller IAM policy
+Service account inferencepoc-sa
+Bedrock access policy
+Necessary IAM role bindings
+
+### Setting up Console Access (Optional)
+```bash
+./scripts/04-setup-console-access.sh
+```
+
+### Building and Pushing the Container Image
+```bash
+./scripts/05-buildimage.sh
+```
+
+This script:
+
+Creates ECR repository if it doesn't exist
+Builds Docker image from app directory
+Tags and pushes image to ECR
+
+### Deploying the Application
+```bash
+./scripts/06-deploy-app.sh
+```
+
+## Monitoring
+
+Checking Service Status:
+
+```bash
+# Get service URL
+kubectl get svc inferencepoc-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Check deployment status
+kubectl get deployments inferencepoc-deployment
+
+# View pod status
+kubectl get pods -l app=inferencepoc
+
+```
+
+## Testing Endpoints
+```bash
+# Store service URL in variable
+export SERVICE_URL=$(kubectl get svc inferencepoc-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+# Test health endpoint
+curl http://${SERVICE_URL}/hello
+
+# Test Bedrock health
+curl http://${SERVICE_URL}/bedrock-health
+
+```
+
+## Viewing Logs
+```bash
+# View logs from all pods
+kubectl logs -l app=inferencepoc
+
+# View logs from a specific pod
+kubectl logs $(kubectl get pod -l app=inferencepoc -o jsonpath='{.items[0].metadata.name}')
+
+# Stream logs
+kubectl logs -f -l app=inferencepoc
+
+```
+
+
+## Cleanup
+
+To remove all resources:
+```bash
+./scripts/07-cleanup.sh
+```
+
+## Consumer
+```bash
+./scripts/team-profile-client.sh
+```
+-----
+Usage:
+Welcome to Team Profile API Client
+=================================
+Available actions:
+-----------------
+- create
+- delete
+- get
+- use
+
+Enter action: use
+
+Valid teams: teama teamb
+Enter team tag: teama
+Enter version (e.g., 1.0): 1.0
+-----
+
+
+## Security Considerations
+
+- IAM roles use least privilege principle
+- Network Load Balancer is configured for public access
+- Service account permissions are scoped to necessary resources
+- Container runs with limited resources
+
+## Troubleshooting
+
+1. Cluster Creation Issues
+   - Verify AWS credentials
+   - Check VPC limits
+   - Ensure sufficient quota for instance types
+
+2. Application Deployment Issues
+   - Check pod logs: `kubectl logs -l app=inferencepoc`
+   - Verify service account permissions
+   - Check NLB health checks
+
+3. Bedrock Integration Issues
+   - Verify Bedrock access permissions
+   - Check STS role assumption
+   - Validate API quotas
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+MIT License
+
+## Support
+
+For support, please open an GitHub issue or contact the maintenance team.
