@@ -345,13 +345,9 @@ main() {
         print_info "- Health check: http://${SERVICE_URL}/hello"
         print_info "- Bedrock health: http://${SERVICE_URL}/bedrock-health"
         
-        # Optional: Test endpoints
-	sleep 120
-        read -p "Would you like to test the endpoints? (y/n) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            test_endpoints
-        fi
+        # Automatically test endpoints
+        sleep 120
+        test_endpoints
     else
         print_warning "Service URL not available. Please check service status."
     fi
