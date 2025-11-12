@@ -82,6 +82,11 @@ def create_profile_if_needed(tenant_id):
         log(f"   ARN: {profile_arn}")
         log(f"   Status: {status}")
         
+        # Wait for profile to propagate before verification
+        import time
+        log(f"⏳ Waiting 5 seconds for profile to propagate...")
+        time.sleep(5)
+        
         # Verify it was created by checking Bedrock again
         try:
             verify_response = client.list_inference_profiles(typeEquals='APPLICATION')
