@@ -55,8 +55,13 @@ def create_profile_if_needed(tenant_id):
         # Create new APPLICATION inference profile
         log(f"🏗️  Creating APPLICATION inference profile: {profile_name}")
         
-        model_arn = "arn:aws:bedrock:us-west-2::foundation-model/us.anthropic.claude-sonnet-4-20250514-v1:0"
-        log(f"📋 Using foundation model ARN: {model_arn}")
+        # Get AWS account ID dynamically
+        sts_client = boto3.client('sts', region_name='us-west-2')
+        account_id = sts_client.get_caller_identity()['Account']
+        
+        # Construct CRIS system inference profile ARN with dynamic account ID
+        model_arn = f"arn:aws:bedrock:us-west-2:{account_id}:inference-profile/us.anthropic.claude-sonnet-4-20250514-v1:0"
+        log(f"📋 Using system inference profile ARN: {model_arn}")
         
         response = client.create_inference_profile(
             inferenceProfileName=profile_name,
