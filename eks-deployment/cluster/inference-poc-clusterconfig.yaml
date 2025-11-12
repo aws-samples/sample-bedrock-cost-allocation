@@ -4,12 +4,18 @@ metadata:
   name: inference-poc
   region: us-west-2
   version: "1.32"
+autoModeConfig:
+  enabled: false
+vpc:
+  clusterEndpoints:
+    privateAccess: true
 managedNodeGroups:
   - name: ng-1
     instanceType: m5.xlarge
     minSize: 1
     maxSize: 2
     desiredCapacity: 1
+    privateNetworking: true
     labels:
       role: proxy
     iam:

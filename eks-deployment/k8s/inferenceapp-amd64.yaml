@@ -19,13 +19,13 @@ spec:
       serviceAccountName: inferencepoc-sa
       containers:
         - name: inferencepoc
-          image: 757795455786.dkr.ecr.us-west-2.amazonaws.com/inferencepoc:latest-amd64
+          image: 269538733491.dkr.ecr.us-west-2.amazonaws.com/inferencepoc:latest-amd64
           ports:
             - containerPort: 80
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
               cpu: 200m
               memory: 256Mi
+            limits:
+              cpu: 400m
+              memory: 512Mi

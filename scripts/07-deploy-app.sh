@@ -215,9 +215,58 @@ wait_for_deployment() {
     done
 }
 
+# Function to update service with private subnets
+update_service_with_private_subnets() {
+    print_section "Updating Service with Private Subnets"
+    
+    # Get EKS cluster VPC ID
+    local vpc_id=$(aws eks describe-cluster --name ${CLUSTER_NAME} --region ${AWS_REGION} --query 'cluster.resourcesVpcConfig.vpcId' --output text)
+    
+    if [ -z "$vpc_id" ] || [ "$vpc_id" == "None" ]; then
+        print_error "Failed to get VPC ID for cluster ${CLUSTER_NAME}"
+        return 1
+    fi
+    
+    print_info "Found EKS VPC: $vpc_id"
+    
+    # Get private subnet IDs
+    local private_subnets=$(aws ec2 describe-subnets \
+        --filters "Name=vpc-id,Values=$vpc_id" "Name=tag:kubernetes.io/role/internal-elb,Values=1" \
+        --query 'Subnets[].SubnetId' \
+        --output text \
+        --region ${AWS_REGION})
+    
+    if [ -z "$private_subnets" ]; then
+        print_error "No private subnets found with internal-elb tag"
+        return 1
+    fi
+    
+    # Convert space-separated to comma-separated
+    local subnet_list=$(echo $private_subnets | tr ' ' ',')
+    print_info "Found private subnets: $subnet_list"
+    
+    # Update the existing service YAML file
+    local service_file="eks-deployment/k8s/inferencepoc-service.yaml"
+    
+    # Check if subnet annotation already exists
+    if grep -q "aws-load-balancer-subnets" $service_file; then
+        # Update existing annotation
+        sed -i "s|service.beta.kubernetes.io/aws-load-balancer-subnets:.*|service.beta.kubernetes.io/aws-load-balancer-subnets: $subnet_list|" $service_file
+    else
+        # Add new annotation after the scheme line
+        sed -i "/service.beta.kubernetes.io\/aws-load-balancer-scheme: internal/a\\    service.beta.kubernetes.io/aws-load-balancer-subnets: $subnet_list" $service_file
+    fi
+    
+    print_success "Updated service file with private subnets: $subnet_list"
+    return 0
+}
+
 # Function to deploy and verify service
 deploy_service() {
     print_section "Deploying Service"
+    
+    # Update service with private subnets
+    update_service_with_private_subnets || return 1
     
     print_info "Applying service..."
     if ! kubectl apply -f eks-deployment/k8s/inferencepoc-service.yaml; then
@@ -310,3 +359,4 @@ main() {
 
 # Execute main function
 main
+

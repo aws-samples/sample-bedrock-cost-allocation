@@ -19,39 +19,13 @@ spec:
       serviceAccountName: inferencepoc-sa
       containers:
         - name: inferencepoc
-          image: 757795455786.dkr.ecr.us-west-2.amazonaws.com/inferencepoc:latest-amd64
+          image: 269538733491.dkr.ecr.us-west-2.amazonaws.com/inferencepoc:latest-amd64
           ports:
-            - containerPort: 8080
+            - containerPort: 80
           resources:
             requests:
               cpu: 200m
-              memory: 512Mi
+              memory: 256Mi
             limits:
-              cpu: 500m
-              memory: 1Gi
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 30
-            timeoutSeconds: 10
-            failureThreshold: 3
-          env:
-            - name: PYTHONUNBUFFERED
-              value: "1"
-            - name: MODEL_CONFIG_PATH
-              value: "config/models.json"
-            - name: FLASK_ENV
-              value: "production"
-            - name: PORT
-              value: "8080"
-
+              cpu: 400m
+              memory: 512Mi

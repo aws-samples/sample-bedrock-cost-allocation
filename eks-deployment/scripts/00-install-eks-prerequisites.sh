@@ -19,9 +19,10 @@
 #   02-create-resources.sh          - Create EKS cluster
 #   03-create-service-account.sh   - Configure service accounts and IAM roles
 #   04-setup-console-access.sh    - Setup EKS console access
-#   05-buildimage.sh             - Build and push container images
-#   06-deploy-app.sh             - Deploy application to EKS
-#   07-cleanup.sh                - Clean up all resources
+#   05-setup-vpc-peering.sh      - Setup VPC peering between host and EKS VPCs
+#   06-buildimage.sh             - Build and push container images
+#   07-deploy-app.sh             - Deploy application to EKS
+#   09-cleanup.sh                - Clean up all resources
 #
 # Environment Variables picked up form config.env file:
 #   - AWS_REGION              - AWS region for deployment
@@ -183,10 +184,19 @@ check_aws_endpoints() {
 
     for service in "${services[@]}"; do
         print_info "Testing AWS $service service..."
-        if aws $service help >/dev/null 2>&1; then
-            print_success "AWS $service service is accessible"
+        if [[ "$service" == "bedrock" ]]; then
+            # Use Python boto3 for bedrock since AWS CLI may not have the command
+            if python3 -c "import boto3; boto3.client('bedrock', region_name='$AWS_REGION')" 2>/dev/null; then
+                print_success "AWS $service service is accessible"
+            else
+                print_warning "AWS $service service might not be accessible"
+            fi
         else
-            print_warning "AWS $service service might not be accessible"
+            if aws $service help >/dev/null 2>&1; then
+                print_success "AWS $service service is accessible"
+            else
+                print_warning "AWS $service service might not be accessible"
+            fi
         fi
     done
 
@@ -472,22 +482,32 @@ check_ec2_role() {
     print_section "Checking EC2 Instance Role"
 
     # Check if running on EC2
-    if curl -s http://169.254.169.254/latest/meta-data/ &>/dev/null; then
+    local token=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" 2>/dev/null)
+    if [ -n "$token" ] && curl -H "X-aws-ec2-metadata-token: $token" -s http://169.254.169.254/latest/meta-data/ &>/dev/null; then
         print_success "Running on EC2 instance"
         
-        # Get instance profile name
-        local instance_profile=$(curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/)
-        if [ -n "$instance_profile" ]; then
+        # Get instance profile name using IMDSv2
+        local instance_profile=$(curl -H "X-aws-ec2-metadata-token: $token" -s http://169.254.169.254/latest/meta-data/iam/security-credentials/)
+        if [ -n "$instance_profile" ] && [[ ! "$instance_profile" =~ "401" ]]; then
             print_success "Instance profile: $instance_profile"
             
             # Check if the role has necessary permissions
             print_info "Checking role permissions..."
             local required_services=("eks" "ecr" "bedrock")
             for service in "${required_services[@]}"; do
-                if aws $service help &>/dev/null; then
-                    print_success "Has access to $service service"
+                if [[ "$service" == "bedrock" ]]; then
+                    # Use Python boto3 for bedrock since AWS CLI may not have the command
+                    if python3 -c "import boto3; boto3.client('bedrock', region_name='$AWS_REGION')" 2>/dev/null; then
+                        print_success "Has access to $service service"
+                    else
+                        print_warning "Missing access to $service service"
+                    fi
                 else
-                    print_warning "Missing access to $service service"
+                    if aws $service help &>/dev/null; then
+                        print_success "Has access to $service service"
+                    else
+                        print_warning "Missing access to $service service"
+                    fi
                 fi
             done
         else
@@ -551,8 +571,17 @@ verify_aws_configuration() {
         print_warning "Access to ECR: Not verified"
     fi
 
-    # Test Bedrock access
-    if aws bedrock list-foundation-models --region $AWS_REGION &>/dev/null; then
+    # Test Bedrock access using Python boto3 (more reliable than AWS CLI)
+    if python3 -c "
+import boto3
+import sys
+try:
+    client = boto3.client('bedrock', region_name='$AWS_REGION')
+    client.list_foundation_models()
+    sys.exit(0)
+except Exception:
+    sys.exit(1)
+" 2>/dev/null; then
         print_success "Access to Bedrock: Verified"
     else
         print_warning "Access to Bedrock: Not verified"

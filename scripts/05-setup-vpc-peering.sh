@@ -189,35 +189,85 @@ identify_eks_vpc() {
     fi
 }
 
+# Function to clean up existing peering connections and routes
+cleanup_existing_peering() {
+    print_section "Cleaning Up Existing Peering Connections"
+    
+    # Find all peering connections between these VPCs
+    EXISTING_PEERINGS=$(aws ec2 describe-vpc-peering-connections \
+        --filters "Name=requester-vpc-info.vpc-id,Values=$HOST_VPC_ID,$EKS_VPC_ID" "Name=accepter-vpc-info.vpc-id,Values=$HOST_VPC_ID,$EKS_VPC_ID" \
+        --query 'VpcPeeringConnections[*].VpcPeeringConnectionId' \
+        --output text \
+        --region ${AWS_REGION})
+    
+    if [ -n "$EXISTING_PEERINGS" ] && [ "$EXISTING_PEERINGS" != "None" ]; then
+        for PEERING in $EXISTING_PEERINGS; do
+            print_info "Cleaning up peering connection: $PEERING"
+            
+            # Delete the peering connection (this will automatically clean up routes)
+            aws ec2 delete-vpc-peering-connection \
+                --vpc-peering-connection-id $PEERING \
+                --region ${AWS_REGION} 2>/dev/null || true
+            
+            print_success "Deleted peering connection: $PEERING"
+        done
+    fi
+    
+    # Clean up any blackhole routes in host VPC
+    print_info "Cleaning up blackhole routes in host VPC"
+    HOST_ROUTE_TABLES=$(aws ec2 describe-route-tables \
+        --filters "Name=vpc-id,Values=$HOST_VPC_ID" \
+        --query 'RouteTables[*].RouteTableId' \
+        --output text \
+        --region ${AWS_REGION})
+    
+    for RT_ID in $HOST_ROUTE_TABLES; do
+        # Delete any routes to EKS VPC CIDR (including blackhole routes)
+        aws ec2 delete-route \
+            --route-table-id $RT_ID \
+            --destination-cidr-block $EKS_VPC_CIDR \
+            --region ${AWS_REGION} 2>/dev/null || true
+    done
+    
+    # Clean up any blackhole routes in EKS VPC
+    print_info "Cleaning up blackhole routes in EKS VPC"
+    EKS_ROUTE_TABLES=$(aws ec2 describe-route-tables \
+        --filters "Name=vpc-id,Values=$EKS_VPC_ID" \
+        --query 'RouteTables[*].RouteTableId' \
+        --output text \
+        --region ${AWS_REGION})
+    
+    for RT_ID in $EKS_ROUTE_TABLES; do
+        # Delete any routes to host VPC CIDR (including blackhole routes)
+        aws ec2 delete-route \
+            --route-table-id $RT_ID \
+            --destination-cidr-block $HOST_VPC_CIDR \
+            --region ${AWS_REGION} 2>/dev/null || true
+    done
+    
+    print_success "Cleanup completed"
+    
+    # Wait a moment for cleanup to propagate
+    sleep 5
+}
+
 # Function to create VPC peering connection
 create_vpc_peering() {
     print_section "Creating VPC Peering Connection"
     
-    # Check if peering connection already exists
-    EXISTING_PEERING=$(aws ec2 describe-vpc-peering-connections \
-        --filters "Name=requester-vpc-info.vpc-id,Values=$HOST_VPC_ID" "Name=accepter-vpc-info.vpc-id,Values=$EKS_VPC_ID" \
-        --query 'VpcPeeringConnections[0].VpcPeeringConnectionId' \
-        --output text \
-        --region ${AWS_REGION})
+    # Create new VPC peering connection
+    PEERING_ID=$(aws ec2 create-vpc-peering-connection \
+        --vpc-id $HOST_VPC_ID \
+        --peer-vpc-id $EKS_VPC_ID \
+        --region ${AWS_REGION} \
+        --query 'VpcPeeringConnection.VpcPeeringConnectionId' \
+        --output text)
     
-    if [ -n "$EXISTING_PEERING" ] && [ "$EXISTING_PEERING" != "None" ]; then
-        print_warning "VPC peering connection already exists: $EXISTING_PEERING"
-        PEERING_ID=$EXISTING_PEERING
-    else
-        # Create VPC peering connection
-        PEERING_ID=$(aws ec2 create-vpc-peering-connection \
-            --vpc-id $HOST_VPC_ID \
-            --peer-vpc-id $EKS_VPC_ID \
-            --region ${AWS_REGION} \
-            --query 'VpcPeeringConnection.VpcPeeringConnectionId' \
-            --output text)
-        
-        if [ -z "$PEERING_ID" ] || [ "$PEERING_ID" == "None" ]; then
-            print_error "Failed to create VPC peering connection"
-            return 1
-        fi
-        print_success "VPC peering connection created: $PEERING_ID"
+    if [ -z "$PEERING_ID" ] || [ "$PEERING_ID" == "None" ]; then
+        print_error "Failed to create VPC peering connection"
+        return 1
     fi
+    print_success "VPC peering connection created: $PEERING_ID"
     
     # Update config.env with peering connection ID
     if grep -q "VPC_PEERING_ID" ./scripts/config.env; then
@@ -361,6 +411,9 @@ main() {
     
     # Identify EKS VPC
     identify_eks_vpc || exit 1
+    
+    # Clean up existing peering connections and routes
+    cleanup_existing_peering || exit 1
     
     # Create VPC peering connection
     create_vpc_peering || exit 1
