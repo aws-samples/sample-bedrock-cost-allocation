@@ -5,7 +5,9 @@
             "Effect": "Allow",
             "Action": [
                 "bedrock:InvokeModel*",
-                "bedrock:CreateInferenceProfile"
+                "bedrock:CreateInferenceProfile",
+                "bedrock:ListFoundationModels",
+                "bedrock:GetFoundationModel"
             ],
             "Resource": [
                 "arn:aws:bedrock:*::foundation-model/*",
@@ -21,12 +23,11 @@
                 "bedrock:DeleteInferenceProfile",
                 "bedrock:TagResource",
                 "bedrock:UntagResource",
-                "bedrock:ListTagsForResource"
+                "bedrock:ListTagsForResource",
+                "bedrock:ListFoundationModels",
+                "bedrock:GetFoundationModel"
             ],
-            "Resource": [
-                "arn:aws:bedrock:*:*:inference-profile/*",
-                "arn:aws:bedrock:*:*:application-inference-profile/*"
-            ]
+            "Resource": "*"
         }
     ]
 }
