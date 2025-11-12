@@ -36,11 +36,11 @@ def create_profile_if_needed(tenant_id):
         
         # Check if profile already exists
         try:
-            response = client.list_inference_profiles()
+            response = client.list_inference_profiles(typeEquals='APPLICATION')
             existing_profiles = {p['inferenceProfileName']: p['inferenceProfileArn'] 
                                for p in response.get('inferenceProfileSummaries', [])}
             
-            log(f"📊 Found {len(existing_profiles)} total profiles in Bedrock")
+            log(f"📊 Found {len(existing_profiles)} APPLICATION profiles in Bedrock")
             
             if profile_name in existing_profiles:
                 log(f"✅ Profile {profile_name} already exists in Bedrock")
@@ -84,7 +84,7 @@ def create_profile_if_needed(tenant_id):
         
         # Verify it was created by checking Bedrock again
         try:
-            verify_response = client.list_inference_profiles()
+            verify_response = client.list_inference_profiles(typeEquals='APPLICATION')
             verify_profiles = {p['inferenceProfileName']: p for p in verify_response.get('inferenceProfileSummaries', [])}
             
             if profile_name in verify_profiles:
