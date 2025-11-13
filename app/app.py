@@ -95,12 +95,15 @@ def bedrock_health():
 
         claude_models = [model for model in models if 'claude' in model['modelId'].lower()]
 
+        # Convert tuple keys to strings for JSON serialization
+        configured_models = {f"{k[0]}_{k[1]}": v for k, v in MODEL_REGISTRY.items()}
+
         return create_success_response({
             "message": "Bedrock service is healthy",
             "region": AWS_REGION,
             "total_models": len(models),
             "claude_models": claude_models,
-            "configured_models": dict(MODEL_REGISTRY)
+            "configured_models": configured_models
         }, time.time() - start_time)
 
     except Exception as e:
