@@ -211,7 +211,7 @@ def invoke_profile(tenant_id):
             modelId=profile_arn,
             messages=[{
                 "role": "user",
-                "content": [{"text": "Hello! Please respond with exactly 5 words."}]
+                "content": [{"text": "Hello! Please explain the benefits of AWS Cloud Computing between 1000 and 3000 words."}]
             }]
         )
 
