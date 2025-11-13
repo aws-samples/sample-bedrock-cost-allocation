@@ -20,7 +20,7 @@ def handle_create_profile(team_tag: str, model_type: str, version: str):
     model_id, model_arn = get_model_arn(model_type, version, team_tag)
     
     tags = [
-        {'key': 'team', 'value': team_tag}, 
+        {'key': 'Team', 'value': team_tag}, 
         {'key': 'model_type', 'value': model_type}, 
         {'key': 'version', 'value': version}
     ]
