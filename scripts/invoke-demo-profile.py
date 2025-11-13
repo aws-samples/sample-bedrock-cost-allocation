@@ -207,17 +207,27 @@ def invoke_profile(tenant_id):
         log(f"🔄 Invoking Bedrock model...")
         bedrock_runtime = boto3.client('bedrock-runtime', region_name='us-west-2')
 
-        response = bedrock_runtime.converse(
-            modelId=profile_arn,
-            messages=[{
+        import json
+        
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 4000,
+            "messages": [{
                 "role": "user",
-                "content": [{"text": "Hello! Please explain the benefits of AWS Cloud Computing between 1000 and 3000 words."}]
+                "content": "Hello! Please explain the benefits of AWS Cloud Computing between 1000 and 3000 words."
             }]
+        })
+
+        response = bedrock_runtime.invoke_model(
+            modelId=profile_arn,
+            body=body,
+            contentType='application/json'
         )
 
-        output_text = response['output']['message']['content'][0]['text']
-        input_tokens = response['usage']['inputTokens']
-        output_tokens = response['usage']['outputTokens']
+        response_body = json.loads(response['body'].read())
+        output_text = response_body['content'][0]['text']
+        input_tokens = response_body['usage']['input_tokens']
+        output_tokens = response_body['usage']['output_tokens']
         total_tokens = input_tokens + output_tokens
 
         log(f"✅ Invocation successful!")
