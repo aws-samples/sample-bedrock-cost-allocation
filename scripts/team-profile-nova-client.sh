@@ -1,6 +1,6 @@
 #############################################################################
 # Script Name: team-profile-client.sh
-# Description: This script is consumer script for nova-pro model for the application deployed on EKS cluster for application inference profile.
+# Description: This script is consumer script for the application deployed on EKS cluster for application inference profile.
 #
 # Author: Omkar Deshmane
 # Date: November 2025
@@ -11,7 +11,7 @@
 #!/bin/bash
 
 # Define valid actions and team tags
-valid_actions=("create" "delete" "get" "use")
+valid_actions=("create" "get" "use" "delete")
 valid_teams=("teama" "teamb")
 valid_model_types=("nova-pro")
 valid_versions=("1.0")
@@ -93,6 +93,7 @@ done
 echo
 
 # Get and validate action
+echo -e "\nValid actions: ${valid_actions[*]}"
 while true; do
     read -p "Enter action: " action
     if validate_action "$action"; then
@@ -146,7 +147,6 @@ fi
 
 # Make the API call with conditional parameters
 service_url=$(kubectl get svc inferencepoc-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-#service_url="127.0.0.1:80"
 echo -e "\nService url is $service_url"
 echo -e "\nMaking API call..."
 
@@ -249,4 +249,14 @@ response=`curl -X POST http://${service_url}/team-profile \
 echo "Request completed...."
 echo -e "\n"
 
-echo "$response" | jq -r '.data.conversation_response.output.message.content[0].text'
+echo $response
+
+if [ "$action" == "use" ]; then
+        echo "$response" | jq -r '.data.conversation_response.output.message.content[0].text'
+elif [ "$action" == "get" ]; then
+        echo "$response" | jq -r '.data.profile_id'
+elif [ "$action" == "create" ]; then
+        echo "$response" | jq -r '.status'
+else
+        echo "$response" | jq -r '.status'
+fi
