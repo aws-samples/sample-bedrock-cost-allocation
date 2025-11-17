@@ -1,23 +1,23 @@
 {
   "model_registry": {
-    "nova-pro_1.0": "us.amazon.nova-pro-v1:0"
+    "sonnet_4.0": "us.anthropic.claude-sonnet-4-20250514-v1:0"
   },
   "team_defaults": {
     "teama": {
-      "model_type": "nova-pro",
-      "version": "1.0"
+      "model_type": "sonnet",
+      "version": "4.0"
     },
     "teamb": {
-      "model_type": "nova-pro",
-      "version": "1.0"
+      "model_type": "sonnet",
+      "version": "4.0"
     }
   },
   "validation": {
     "valid_teams": ["teama", "teamb"],
-    "valid_model_types": ["nova-pro"],
-    "valid_versions": ["1.0"],
+    "valid_model_types": ["sonnet"],
+    "valid_versions": ["4.0"],
     "valid_actions": ["create", "delete", "get", "use"],
-    "default_version": "1.0"
+    "default_version": "4.0"
   },
   "aws_config": {
     "region": "us-west-2",
