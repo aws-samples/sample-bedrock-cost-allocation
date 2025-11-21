@@ -29,7 +29,7 @@ def log(message):
 
 def create_profile_if_needed(tenant_id):
     """Create APPLICATION inference profile if it doesn't exist"""
-    profile_name = f"{tenant_id}-nova-lite"
+    profile_name = f"{tenant_id}-nova-premier"
 
     try:
         client = boto3.client('bedrock', region_name='us-west-2')
@@ -61,7 +61,7 @@ def create_profile_if_needed(tenant_id):
         account_id = sts_client.get_caller_identity()['Account']
 
         # Construct CRIS system inference profile ARN with dynamic account ID for Nova
-        model_arn = f"arn:aws:bedrock:us-west-2:{account_id}:inference-profile/us.amazon.nova-lite-v1:0"
+        model_arn = f"arn:aws:bedrock:us-west-2:{account_id}:inference-profile/us.amazon.nova-premier-v1:0"
         log(f"📋 Using system inference profile ARN: {model_arn}")
 
         response = client.create_inference_profile(
@@ -182,7 +182,7 @@ def load_or_create_profile(tenant_id):
     # Create profile if not found
     profile_arn = create_profile_if_needed(tenant_id)
     if profile_arn:
-        profile_name = f"{tenant_id}-nova-lite"
+        profile_name = f"{tenant_id}-nova-premier"
         log(f"✅ Successfully obtained profile: {profile_name}")
         return profile_name, profile_arn
 
