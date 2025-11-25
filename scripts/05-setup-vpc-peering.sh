@@ -8,6 +8,8 @@
 #
 # Prerequisites:
 #   - AWS CLI v2
+
+export AWS_PAGER=""
 #   - Valid AWS credentials and region configuration
 #   - EKS cluster already created
 #   - config.env file in scripts directory
