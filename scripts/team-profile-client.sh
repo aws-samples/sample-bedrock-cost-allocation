@@ -3,7 +3,7 @@
 # Description: This script is consumer script for the application deployed on EKS cluster for application inference profile.
 #
 # Author: Omkar Deshmane
-# Date: April 2025
+# Date: November 2025
 #
 # Usage: ./scripts/[script_name.sh]
 #
@@ -11,10 +11,10 @@
 #!/bin/bash
 
 # Define valid actions and team tags
-valid_actions=("create" "delete" "get" "use")
+valid_actions=("create" "get" "use" "delete")
 valid_teams=("teama" "teamb")
-valid_model_types=("sonnet")
-valid_versions=("4.0")
+valid_model_types=("nova-pro")
+valid_versions=("1.0")
 
 # Function to validate action
 validate_action() {
@@ -93,6 +93,7 @@ done
 echo
 
 # Get and validate action
+echo -e "\nValid actions: ${valid_actions[*]}"
 while true; do
     read -p "Enter action: " action
     if validate_action "$action"; then
@@ -126,11 +127,11 @@ done
 
 # Get and validate version (with default)
 echo -e "\nValid versions: ${valid_versions[*]}"
-read -p "Enter version (default: 4.0): " version
+read -p "Enter version (default: 1.0): " version
 if [ -z "$version" ]; then
-    version="4.0"
+    version="1.0"
 elif ! validate_version "$version"; then
-    echo "Error: Invalid version. Only allowed version is 4.0"
+    echo "Error: Invalid version. Only allowed version is 1.0"
     exit 1
 fi
 
@@ -146,7 +147,6 @@ fi
 
 # Make the API call with conditional parameters
 service_url=$(kubectl get svc inferencepoc-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-
 echo -e "\nService url is $service_url"
 echo -e "\nMaking API call..."
 
@@ -157,7 +157,7 @@ create_json_payload() {
     local model_type="$3"
     local version="$4"
     local user_message="$5"
-    
+
     # Use Python to create proper JSON (most reliable method)
     if command -v python3 &> /dev/null; then
         if [ -n "$user_message" ]; then
@@ -238,13 +238,25 @@ if command -v python3 &> /dev/null; then
 fi
 
 #echo "📤 Sending JSON Payload:"
-#echo "$json_payload"
+echo "$json_payload"
+
 echo "Sending request...."
 
-curl -X POST http://${service_url}/team-profile \
+response=`curl -X POST http://${service_url}/team-profile \
 -H "Content-Type: application/json" \
--d "$json_payload"
+-d "$json_payload"`
 
 echo "Request completed...."
 echo -e "\n"
 
+echo $response
+
+if [ "$action" == "use" ]; then
+        echo "$response" | jq -r '.data.conversation_response.output.message.content[0].text'
+elif [ "$action" == "get" ]; then
+        echo "$response" | jq -r '.data.profile_id'
+elif [ "$action" == "create" ]; then
+        echo "$response" | jq -r '.status'
+else
+        echo "$response" | jq -r '.status'
+fi
